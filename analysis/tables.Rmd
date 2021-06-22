@@ -1,0 +1,86 @@
+---
+title: "tables"
+author: "upulcooray"
+date: "2021-06-22"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+## Introduction
+
+This analysis was conducted to assess different opinions regarding the introduction of RFID (denture identification system)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(labelled)
+library(gtsummary)
+library(flextable)
+
+# import data
+
+load("data/isudata.RData")
+
+
+```
+
+```{r include=FALSE}
+
+data <- df %>%  mutate( `Widely introduce RFID`= if_else(`Introduce RFID`== "Widely introduce","Agree","Not agree") %>% as_factor(),
+  `Against RFID`= if_else(`Introduce RFID`== "Aginst RFID","Against", "Not against") %>% as_factor()) 
+  
+```
+
+<!-- ==============================Define table function====================== -->
+
+```{r tab-fun, include=FALSE}
+
+ 
+tab.fun <- function(staff,headvar) {
+  
+  data.den <- data %>%
+    filter(`Staff type`== staff) %>% 
+    
+    select(headvar, `Widely introduce RFID`, `Against RFID` ) 
+  
+  header <- data.den %>% select(all_of(headvar)) %>% colnames()
+  
+  title <- paste("Opinion on RFID introduction among",tolower(staff), "staff", "based on",tolower(header))
+  
+ tbl_summary(data.den,by= headvar)  %>%  
+    
+    add_p() %>% 
+    modify_caption(caption = title) %>% 
+    modify_spanning_header(c("stat_1", "stat_2") ~ header) %>% 
+    bold_labels() %>% 
+    as_flex_table()
+  
+}
+
+
+```
+
+#### *Difference in opinion among professionals with and without experience identification systems*
+
+> derived from **Question 13** (respondents who had experience with unidentified case or who has identification set-up in their clinic were recorded as having experience **with other systems**)
+
+```{r    message=FALSE}
+
+tab.fun("Dental","Work experience")
+tab.fun("Nursing","Work experience")
+
+# tab.fun(dental.df,"Know_other")
+# 
+# tab.fun(dental.df,"Speciality")
+```
+
+#### *Difference in opinion based on the years of experience*
+
+```{}
+```
+
+#### *Difference in opinion based on the speciality*
+
+```{}
+```
