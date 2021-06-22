@@ -1,0 +1,423 @@
+---
+title: "Factors affecting the opinion on RFID system introduction among dental professionals"
+output:
+  html_document:
+    df_print: paged
+  
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(labelled)
+library(gtsummary)
+library(flextable)
+
+# import data
+library(readxl)
+dental.df <- read_excel("20200331 questionnair for dental stuff.xlsx", sheet = "dentist (original)")
+
+glimpse(dental.df)
+
+load("isudata.RData")
+
+
+```
+
+discripthin
+<!-- ============================Import data================================ -->
+```{r dental.data, include=FALSE}
+
+tab.fun <- function(df,headvar) {
+  
+  data.den <- df %>% 
+    filter(!is.na(.)) %>% 
+    select(id, `forensic odontologist`, q4_experience:q7_seenRFID,
+           q11_num_of_other_systems,`experienced other systems`,
+           q19_RFID_system_introduce) %>% 
+    mutate(Speciality= if_else(`forensic odontologist`==1, "Forensic Odontologist", "Other"),
+           Experience= if_else(q4_experience== 1, "<10 years", ">=10 years"),
+           Know_RFID= if_else(q6_knowRFID== 1, "Yes", "No"),
+           
+           Know_other= if_else(q11_num_of_other_systems==0,"No","Yes"),
+           Other_systems_exp= if_else(`experienced other systems`==1, "Yes","No"),
+           Introduce_RFID= case_when(q19_RFID_system_introduce== 1~ "Widely introduce",
+                                     q19_RFID_system_introduce== 2~ "Introduce on request",
+                                     TRUE ~ "Aginst RFID"),
+           Widely_introduce= if_else(q19_RFID_system_introduce== 1,"Yes","No"),
+           Against_RFID= if_else(q19_RFID_system_introduce< 3,"No","Against")) %>% 
+    mutate_if(is.character,as.factor) %>%
+    
+    select(Speciality:Against_RFID) %>% 
+    
+    set_variable_labels( Speciality= "Forensic or other dental speciality",
+                         Experience= "Years of experience in the field",
+                         Know_RFID= "Know about RFID",
+                         Know_other= "Know about other systems",
+                         Introduce_RFID= "Opinion on RFID introduction",
+                         Other_systems_exp= "Experience with other systems",
+                         Widely_introduce= "Introduce RFID widely",
+                         Against_RFID= "Aginst introduction of RFID") %>%
+    select(headvar, Introduce_RFID, Against_RFID ) 
+  
+  header <- var_label(data.den[headvar])[[1]]
+  
+  
+  tabl <- tbl_summary(data.den,by= headvar)  %>%  
+    
+    add_p() %>% 
+    
+    modify_spanning_header(c("stat_1", "stat_2") ~ header) %>% 
+    bold_labels() %>% 
+    as_flex_table()
+  
+  return(tabl)
+}
+
+
+```
+
+### Difference in opinion among professionals with and without exprience 
+identification systems
+
+> derived from **Question 13** (respondents who had  exprience with unidentified 
+case or who has identification set-up in their clinic were recored as having **exprience 
+with other systems**)
+
+```{r, echo=FALSE}
+
+tab.fun(dental.df,"Other_systems_exp")
+
+# tab.fun(dental.df,"Know_other")
+# 
+# tab.fun(dental.df,"Speciality")
+```
+
+
+
+
+
+```{r}
+
+untidy.df <- read_excel("Rev3-3 questionnaire for nursing care stuff0308.xlsx", sheet = "Sheet1")
+
+
+```
+
+```{r nursing.data, include=FALSE}
+
+
+data.nur <- untidy.df %>% 
+        select(ID, Q1_Occupation, Q3_work_experience, 
+               `Q18_heard_denture_marking_system?`, `Q19_heard_RFID?`,
+               `Q20_seen_RFID_denture?`, `Q21_know_other_systems?`,
+               `Q22_seen_other_systems?`,`Q25_denture_make_RFID?`) %>% 
+        mutate(Speciality= case_when(   Q1_Occupation ==1|Q1_Occupation ==3 ~ "Nursing",
+                                        Q1_Occupation <=6 ~ "Carer",
+                                        TRUE~ "other(nur)")) %>% 
+        mutate(`Work experience`= ifelse(Q3_work_experience< 3, "<10 years", ">10 years")) %>% 
+        mutate(`Heard of IMP`= ifelse(`Q18_heard_denture_marking_system?`== 1,
+                                      "Yes", "No"),
+               `Know RFID`= ifelse(`Q19_heard_RFID?`== 1, "Yes", "No"),
+               `Seen RFID`= ifelse(`Q20_seen_RFID_denture?`== 1, "Yes", "No"),
+               `Number of systems known`= case_when(`Q21_know_other_systems?`==5 ~0,
+                                                    `Q21_know_other_systems?`==200 ~2,
+                                                    `Q21_know_other_systems?`==300 ~3,
+                                                    TRUE ~ 1),
+               `Seen other`= ifelse(`Q22_seen_other_systems?`== 1, "Yes", "No"),
+               `Introduce RFID`= case_when(`Q25_denture_make_RFID?`== 1~ "Widely introduce",
+                                           `Q25_denture_make_RFID?`== 2~ "Introduce on request",
+                                           TRUE ~ "Aginst RFID"),
+               
+               `Staff type`="Nursing") %>% 
+        
+        mutate_if(is.character,as.factor) %>% 
+        select(Speciality:`Staff type`)
+
+# glimpse(data.nur)
+
+```
+
+
+
+```{r combine.data, include=FALSE}
+# Combine dental and nursing data
+
+df <- rbind(data.den,data.nur)
+
+
+df
+
+```
+
+
+<!-- ==============================Figures================================== -->
+
+```{r fig1, echo=FALSE, fig.align="center",fig.retina=3, fig.width=7}
+
+library(broom)
+
+
+# ===============================================================
+# difference between RFID known  and unknown dental staff
+# Question number 14 as the exposure
+
+# ================================================================
+
+a <- chisq.test(x=df$`Staff type`, y=df$`Introduce RFID`)
+        
+
+
+df %>% ggplot(aes(x= `Introduce RFID`, 
+                  group= `Staff type`,
+                  fill= `Staff type`)) +
+  
+  geom_bar(aes(y=..prop..), stat="count",
+           position = position_dodge(0.6),alpha=0.8, width = 0.5, colour="black")+
+  
+  # facet_grid(~ `Work experience`)+
+  
+  scale_y_continuous(labels = scales::percent)+
+  
+  scale_x_discrete(labels =c("Against\nRFID", 
+                             "Inroduce\non request", 
+                             "Introduce\nwiddely" ))+
+  
+  geom_text(aes(label=scales::percent(round(..prop..,2)), 
+                y=..prop..), stat="count", vjust=-.5, 
+            position=position_dodge(0.59),size=3) +
+  
+  geom_text(inherit.aes =F ,
+            aes(1.2, 0.8 ,label= paste0("\U1D6D8(",a$parameter,")=",
+                                        round(a$statistic, 2), 
+                                        "; p=", round(a$p.value, 2))), size=4) +
+  
+  theme_bw()+
+  
+  theme(plot.background = element_rect(colour = NA),
+        panel.grid.major = element_line(colour = "#f0f0f0",
+                                        linetype = "dashed"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "bottom",
+        legend.key.size = unit(5, 'mm'),
+        legend.title = element_text(size=10),
+        aspect.ratio = 3/4.5,axis.ticks.x.bottom = element_line(color = "black"))+
+  
+  xlab("Opinion on introduction of RFID")+
+  ylab("Percentage")+
+
+  scale_fill_manual(values = c("royalblue3","lightslateblue"))
+
+```
+
+```{r fig2, echo=FALSE, fig.align="center",fig.retina=3, fig.width=7}
+
+df %>% filter(`Staff type`== "Dental")
+
+a1 <- df %>% filter(`Staff type`== "Dental")   
+a <- chisq.test(x=a1$`Know RFID`, y=a1$`Introduce RFID`)
+        
+
+
+df %>% filter(`Staff type`== "Dental") %>% ggplot(aes(x= `Introduce RFID`, 
+                  group= `Know RFID`,
+                  fill= `Know RFID`)) +
+  
+  geom_bar(aes(y=..prop..), stat="count",
+           position = position_dodge(0.6),alpha=0.8, width = 0.5, colour="black")+
+  
+  # facet_grid(~ `Work experience`)+
+  
+  scale_y_continuous(labels = scales::percent)+
+  
+  scale_x_discrete(labels =c("Against\nRFID", 
+                             "Inroduce\non request", 
+                             "Introduce\nwiddely" ))+
+  
+  geom_text(aes(label=scales::percent(round(..prop..,2)), 
+                y=..prop..), stat="count", vjust=-.5, 
+            position=position_dodge(0.59),size=3) +
+  
+  geom_text(inherit.aes =F ,
+            aes(1.2, 0.8 ,label= paste0("\U1D6D8(",a$parameter,")=",
+                                        round(a$statistic, 2), 
+                                        "; p=", round(a$p.value, 2))), size=4) +
+  
+  theme_bw()+
+  
+  theme(plot.background = element_rect(colour = NA),
+        panel.grid.major = element_line(colour = "#f0f0f0",
+                                        linetype = "dashed"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "bottom",
+        legend.key.size = unit(5, 'mm'),
+        legend.title = element_text(size=10),
+        aspect.ratio = 3/4.5,axis.ticks.x.bottom = element_line(color = "black"))+
+  
+  xlab("Opinion on introduction of RFID")+
+  ylab("Percentage")+
+
+  scale_fill_manual(values = c("royalblue3","lightslateblue"))
+
+```
+
+
+
+
+```{r fig3, echo=FALSE, fig.align="center",fig.retina=3}
+
+library(broom)
+
+chi2.test1 <-
+  df %>% 
+  select(`Staff type`, `Work experience`,`Introduce RFID`) %>% 
+    group_by(`Work experience`) %>% 
+  
+    do(fit = chisq.test(x=.$`Staff type`, y=.$`Introduce RFID`)) %>% 
+         mutate(tidys = list(broom::tidy(fit))) %>%
+  unnest(tidys) 
+
+
+
+df %>% ggplot(aes(x= `Introduce RFID`, 
+                  group= `Staff type`, 
+                  fill= `Staff type`)) +
+  
+  geom_bar(aes(y=..prop..), stat="count",
+           position = position_dodge2(),alpha=0.8)+
+  
+  facet_grid(~ `Work experience`)+
+  
+  scale_y_continuous(labels = scales::percent)+
+  
+  scale_x_discrete(labels =c("Against\nRFID", 
+                             "Inroduce\non request", 
+                             "Introduce\nwiddely" ))+
+  
+  geom_text(aes(label=scales::percent(round(..prop..,2)), 
+                y=..prop..), stat="count", vjust=-.5, 
+            position=position_dodge(.9),size=3) +
+  
+  geom_text(data = chi2.test1, inherit.aes =F ,
+            aes(1.2, 0.8 ,label= paste0("\U1D6D8(",parameter,")=",
+                                        round(statistic, 2), 
+                                        "; p=", round(p.value, 2))), size=3) +
+  
+  theme_bw()+
+  
+  theme(plot.background = element_rect(colour = NA),
+        panel.grid.major = element_line(colour = "#f0f0f0",
+                                        linetype = "dashed"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "bottom",
+        legend.key.size = unit(5, 'mm'),
+        legend.title = element_text(size=10))+
+  
+  xlab("Opinion on introduction of RFID")+
+  ylab("Percentage")+
+
+  scale_fill_manual(values = c("royalblue3","lightslateblue"))
+
+```
+
+```{r fig4, echo=FALSE,fig.align="center",fig.retina=3}
+
+chi2.test2 <- df %>% 
+  select(`Staff type`, `Work experience`,`Introduce RFID`) %>% 
+  group_by( `Staff type`) %>% 
+  
+  do(fit = chisq.test(x=.$`Work experience`, y=.$`Introduce RFID`)) %>% 
+  mutate(tidys = list(broom::tidy(fit))) %>%
+  unnest(tidys) 
+
+
+
+
+
+df %>% ggplot(aes(x= `Introduce RFID`, group= `Work experience`, fill= `Work experience`)) +
+  geom_bar(aes(y=..prop..), stat="count",position = position_dodge2(),alpha=0.8)+
+  facet_grid(~ `Staff type`)+
+  scale_y_continuous(labels = scales::percent)+
+  scale_x_discrete(labels =c("Against\nRFID", "Inroduce\non request", "Introduce\nwiddely" ))+
+  geom_text(aes(label=scales::percent(round(..prop..,2)), 
+                y=..prop..), stat="count", vjust=-.5, position=position_dodge(.9),size=3) +
+  geom_text(data = chi2.test2, inherit.aes =F ,
+            aes(1.2, 0.8 ,label= paste0("\U1D6D8(",parameter,")=",
+                                        round(statistic, 2), "; p=", round(p.value, 2))), size=3) +
+  
+  theme_bw()+
+  theme(plot.background = element_rect(colour = NA),
+        panel.grid.major = element_line(colour = "#f0f0f0",linetype = "dashed"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "bottom",
+        legend.key.size = unit(5, 'mm'),
+        legend.title = element_text(size=10))+
+  xlab("Opinion on introduction of RFID")+
+  ylab("Percentage")+
+
+  scale_fill_manual(values = c("royalblue3","lightslateblue"))
+
+
+
+```
+
+
+
+```{r fig5, echo=FALSE}
+
+chi2.test3 <- df %>% 
+  select(`Staff type`, `Heard of IMP`,`Introduce RFID`) %>% 
+  group_by( `Staff type`) %>% 
+  
+  do(fit = chisq.test(x=.$`Heard of IMP`, y=.$`Introduce RFID`)) %>% 
+  mutate(tidys = list(broom::tidy(fit))) %>%
+  unnest(tidys) 
+
+
+
+
+
+df %>% ggplot(aes(x= `Introduce RFID`, group= `Heard of IMP`, fill= `Heard of IMP`)) +
+  geom_bar(aes(y=..prop..), stat="count",position = position_dodge2(),alpha=0.8)+
+  facet_grid(~ `Staff type`)+
+  scale_y_continuous(labels = scales::percent)+
+  scale_x_discrete(labels =c("Against\nRFID", "Inroduce\non request", "Introduce\nwiddely" ))+
+  geom_text(aes(label=scales::percent(round(..prop..,2)), 
+                y=..prop..), stat="count", vjust=-.5, position=position_dodge(.9),size=3) +
+  geom_text(data = chi2.test3, inherit.aes =F ,
+            aes(1.2, 0.8 ,label= paste0("\U1D6D8(",parameter,")=",
+                                        round(statistic, 2), "; p=", round(p.value, 2))), size=3) +
+  
+  theme_bw()+
+  theme(plot.background = element_rect(colour = NA),
+        panel.grid.major = element_line(colour = "#f0f0f0",linetype = "dashed"),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        legend.position = "bottom",
+        legend.key.size = unit(5, 'mm'),
+        legend.title = element_text(size=10))+
+  xlab("Opinion on introduction of RFID")+
+  ylab("Percentage")+
+
+  scale_fill_manual(values = c("royalblue3","lightslateblue"))
+
+
+
+```
+
+
+```{r}
+table(df$Speciality)
+
+table(data.den$`Know RFID`)
+
+
+```
+
+
