@@ -24,6 +24,6 @@ Explanatory variables;
 5. Heard of identification systems
 
 
-Results tables can be found in following link `r "\U261F"``
+`r "\U1F447"` Results tables can be found in following link 
 
 [Comparison Tables](tables.html)
