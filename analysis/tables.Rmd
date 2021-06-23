@@ -27,9 +27,13 @@ load("data/isudata.RData")
 
 ```{r include=FALSE}
 
-data <- df %>%  mutate( `Widely introduce RFID`= if_else(`Introduce RFID`== "Widely introduce","Agree","Not agree") %>% as_factor(),
-  `Against RFID`= if_else(`Introduce RFID`== "Aginst RFID","Against", "Not against") %>% as_factor()) 
-  
+data <- df %>%  mutate(Speciality= case_when(Speciality== "forensic odontologist"~ "Forensic odontologists/ Carer",
+                                             Speciality== "Carer"~ "Forensic odontologists/ Carer",
+                                             TRUE~ "Other related proffession") %>% as.factor(),
+                       
+                       `Widely introduce RFID`= if_else(`Introduce RFID`== "Widely introduce","Agree","Not agree") %>% as_factor(),
+                       `Against RFID`= if_else(`Introduce RFID`== "Aginst RFID","Against", "Not against") %>% as_factor()) 
+
 ```
 
 <!-- ==============================Define table function====================== -->
@@ -37,16 +41,26 @@ data <- df %>%  mutate( `Widely introduce RFID`= if_else(`Introduce RFID`== "Wid
 ```{r tab-fun, include=FALSE}
 
  
-tab.fun <- function(staff,headvar) {
+tab.fun <- function(staff="",headvar, full= FALSE) {
   
-  data.den <- data %>%
-    filter(`Staff type`== staff) %>% 
+  
+  
+  if (full) {
+    data.den <- data %>% select(headvar, `Widely introduce RFID`, `Against RFID` ) 
+    staff <- "all participants"
+  } 
+  
+  else {
+    data.den <-      data %>% filter(`Staff type`== staff) %>% 
+      select(headvar, `Widely introduce RFID`, `Against RFID` )  
+    staff <- paste(staff,"staff")
+  } 
+  
     
-    select(headvar, `Widely introduce RFID`, `Against RFID` ) 
   
   header <- data.den %>% select(all_of(headvar)) %>% colnames()
   
-  title <- paste("Opinion on RFID introduction among",tolower(staff), "staff", "based on",tolower(header))
+  title <- paste("Opinion on RFID introduction among",tolower(staff), "based on",tolower(header))
   
  tbl_summary(data.den,by= headvar)  %>%  
     
@@ -61,26 +75,36 @@ tab.fun <- function(staff,headvar) {
 
 ```
 
-#### *Difference in opinion among professionals with and without experience identification systems*
-
-> derived from **Question 13** (respondents who had experience with unidentified case or who has identification set-up in their clinic were recorded as having experience **with other systems**)
+#### *Difference in opinion among professionals based on work experience*
 
 ```{r    message=FALSE}
 
 tab.fun("Dental","Work experience")
 tab.fun("Nursing","Work experience")
 
-# tab.fun(dental.df,"Know_other")
-# 
-# tab.fun(dental.df,"Speciality")
 ```
 
 #### *Difference in opinion based on the years of experience*
 
-```{}
+```{r    message=FALSE}
+
+test <- tab.fun("Dental","Speciality") %>%  compose( j = "stat_1",
+               value = as_paragraph(
+                 "Forensic odontologists",
+                 as_chunk(count(data$Speciality))
+               ),
+               part = "header")
+  
+  
+  
+  set_header_labels(
+  values = list(stat_1 = "Forensic odontologists, N= 
+                {n}"))
+
+tab.fun("Dental","Speciality")
 ```
 
-#### *Difference in opinion based on the speciality*
+#### *Difference in opinion based on the specialty*
 
 ```{}
 ```

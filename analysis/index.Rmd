@@ -10,4 +10,17 @@ editor_options:
 
 This website contains the results of RFID data analysis
 
+Outcome varaibles;
+
+1. introduce widely (yes/no)
+2. against RFID (yes/no)
+
+Exposures;
+
+1. Work experience (<10yrs/ >10 yrs)
+2. Specialty
+
+
+
+
 [Comparison Tables](tables.html)

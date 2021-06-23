@@ -1,12 +1,11 @@
 ---
-title: "Factors affecting the opinion on RFID system introduction among dental professionals"
-output:
-  html_document:
-    df_print: paged
-  
+title: "rfid_1"
+author: "upulcooray"
+date: "2021-06-22"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
 ---
-
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -17,16 +16,45 @@ library(flextable)
 
 # import data
 library(readxl)
+library(readxl)
 dental.df <- read_excel("20200331 questionnair for dental stuff.xlsx", sheet = "dentist (original)")
-
-glimpse(dental.df)
-
-load("isudata.RData")
-
+nursing.df <- read_excel("Rev3-3 questionnaire for nursing care stuff0308.xlsx", sheet = "Sheet1")
 
 ```
 
-discripthin
+```{r}
+
+varlist_den <- c("forensic odontologist", 
+             "q4_experience",
+             "q6_knowRFID",
+             "q11_num_of_other_systems",
+             "experienced other systems",
+             "q19_RFID_system_introduce")
+
+varlist_nur <- c("Q1_Occupation", 
+             "Q3_work_experience",
+             "Q19_heard_RFID?",
+             "Q21_know_other_systems?",
+             "Q11_missing_denture",
+             "Q25_denture_make_RFID?")
+
+
+clean_den <- dental.df %>% mutate(
+  Speciality= if_else(`forensic odontologist`==1, "Forensic Odontologist", "Other"),
+  Experience= if_else(q4_experience== 1, "<10 years", ">=10 years"),
+  Know_RFID= if_else(q6_knowRFID== 1, "Yes", "No"),
+  Know_other= if_else(q11_num_of_other_systems==0,"No","Yes"),
+  Other_systems_exp= if_else(`experienced other systems`==1, "Yes","No"),
+  Introduce_RFID= case_when(q19_RFID_system_introduce== 1~ "Widely introduce",
+                            q19_RFID_system_introduce== 2~ "Introduce on request",
+                            TRUE ~ "Aginst RFID"),
+  Widely_introduce= if_else(q19_RFID_system_introduce== 1,"Yes","No"),
+  Against_RFID= if_else(q19_RFID_system_introduce< 3,"No","Against")) %>% 
+  
+  select(Spe)
+
+```
+
 <!-- ============================Import data================================ -->
 ```{r dental.data, include=FALSE}
 
@@ -419,5 +447,3 @@ table(data.den$`Know RFID`)
 
 
 ```
-
-
