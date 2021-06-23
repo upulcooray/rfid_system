@@ -1,7 +1,7 @@
 ---
 title: "tables"
-author: "upulcooray"
-date: "2021-06-22"
+author: "Upul Cooray"
+date: "Last compiled on `r format(Sys.time(), '%d %B, %Y at %H:%M')`"
 output: workflowr::wflow_html
 editor_options:
   chunk_output_type: console

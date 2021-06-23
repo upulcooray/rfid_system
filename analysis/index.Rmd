@@ -10,17 +10,20 @@ editor_options:
 
 This website contains the results of RFID data analysis
 
-Outcome varaibles;
+Outcome variables;
 
-1. introduce widely (yes/no)
-2. against RFID (yes/no)
+1. Introduce widely (Agree/not agree)
+2. Against RFID (Not against/ Against)
 
-Exposures;
+Explanatory variables;
 
 1. Work experience (<10yrs/ >10 yrs)
 2. Specialty
+3. Seen other system
+4. Know about RFID system
+5. Heard of identification systems
 
 
-
+Results tables can be found in following link `r "\U261F"``
 
 [Comparison Tables](tables.html)
